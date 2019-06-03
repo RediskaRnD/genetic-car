@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module":"amd",
+    "target": "es5",
+    "removeComments": false,
+    "sourceMap": true,
+    "strict": false,
+    "outDir": "static/js"
+  }
+//  "exclude": ["static/tools"]
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" lang="ru-RU"/>
+    <title>Тачка</title>
+    <style>
+        body {
+            position: fixed;
+        }
+
+        * {
+            /*font: 12px/16px Consolas, Garamond, Serif;*/
+            font: 16px/20px Consolas, Garamond, Serif;
+            word-wrap: break-word;
+            margin: 0;
+            padding: 0;
+        }
+
+        #container {
+            display: grid;
+            grid-template-rows: min-content min-content auto 16px;
+            grid-template-columns: auto 270px;
+            grid-template-areas: "canvas vars" "canvas track" "canvas log" "canvas input";
+            grid-gap: 1px;
+            background-color: #7f7f7f;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #canvas {
+            grid-area: canvas;
+            background: #9af9b4;
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+        }
+
+        #vars {
+            grid-area: vars;
+            padding: 1em;
+            background-color: #cecece;
+            overflow: hidden;
+        }
+
+        #log {
+            grid-area: log;
+            padding: 1em;
+            background-color: #ef9b7f;
+            overflow: auto;
+        }
+
+        #input {
+            grid-area: input;
+            border: 0;
+            background-color: #ededed;
+            box-sizing: border-box;
+        }
+
+    </style>
+</head>
+<body>
+<div id="container">
+    <canvas id="canvas"></canvas>
+    <div id="vars" spellcheck="false"></div>
+    <div id="log" spellcheck="false"></div>
+    <input id="input" spellcheck="false">
+    <div id="track">
+
+    </div>
+</div>
+<script data-main="js/main" src="js/require.js"></script>
+<!--<script src="../static/tools.js" defer></script>-->
+<!--<script src="../static/bezier.js" defer></script>-->
+<!--<script src="../static/track.js" defer></script>-->
+<!--<script src="../static/car.js" defer></script>-->
+<!--<script src="../static/main.js" defer></script>-->
+<!--<script src="tools.js" defer></script>-->
+<!--<script src="bezier.js" defer></script>-->
+<!--<script src="track.js" defer></script>-->
+<!--<script src="car.js" defer></script>-->
+<!--<script src="main.js" defer></script>-->
+</body>
+</html>

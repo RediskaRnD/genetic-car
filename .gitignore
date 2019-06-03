@@ -1,0 +1,22 @@
+/java-to-ts/.jsweet/
+/node_modules/
+**/target/
+/.tscache/
+**/*.js
+!Gruntfile.js
+!require.js
+**/core/*.ts
+**/tools/*.ts
+**/*.map
+/target/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+#!.mvn/wrapper/maven-wrapper.jar
+
+
+
+
