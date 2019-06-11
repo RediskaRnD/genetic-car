@@ -1,5 +1,11 @@
 package rediska;
 
+import competition.Competition;
+import core.Car;
+import core.Sensor;
+import core.Track;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -11,18 +17,21 @@ import tools.Point;
 
 import java.util.HashMap;
 
-
 @CrossOrigin
 @Controller
 public class TrackController {
+
+    private Track track = new Track(1000);
+
     @Autowired
-    TrackGenerator trackGenerator;
+    private Competition competition;
 
     @GetMapping("/getdata")
     @ResponseBody
     public HashMap<String, Point[][]> index() {
         HashMap<String, Point[][]> stringHashMap = new HashMap<>();
-        Point[][] points = trackGenerator.getTrack();
+        track = new Track(track.getLength());
+        Point[][] points = track.getTrack();
         stringHashMap.put("track", points);
         return stringHashMap;
     }
@@ -30,10 +39,10 @@ public class TrackController {
     @GetMapping("/")
     public String track(RedirectAttributes ra) {
 
-        ra.addAttribute("a", trackGenerator.getAngle());
-        ra.addAttribute("l", trackGenerator.getLength());
-        ra.addAttribute("wMin", trackGenerator.getWidthMin());
-        ra.addAttribute("wMax", trackGenerator.getWidthMax());
+        ra.addAttribute("a", track.getAngle());
+        ra.addAttribute("l", track.getLength());
+        ra.addAttribute("wMin", track.getWidthMin());
+        ra.addAttribute("wMax", track.getWidthMax());
         return "redirect:/track";
     }
 
@@ -43,10 +52,29 @@ public class TrackController {
                         @RequestParam(name = "wMin", required = false, defaultValue = "60") double widthMin,
                         @RequestParam(name = "wMax", required = false, defaultValue = "200") double widthMax
     ) {
-        trackGenerator.setAngle(angle);
-        trackGenerator.setLength(length);
-        trackGenerator.setWidthMin(widthMin);
-        trackGenerator.setWidthMax(widthMax);
+        track = new Track(length);
+        track.setAngle(angle);
+        track.setWidthMin(widthMin);
+        track.setWidthMax(widthMax);
+        track = new Track(track.getLength());
         return "/track";
+    }
+
+    @GetMapping("/car")
+    @ResponseBody
+    public String getParams(@RequestParam(defaultValue = "1") int keys) {
+        Car car = competition.player.car;
+        car.update(1.0 / 60);
+        competition.player.keys |= keys; // ???? TODO
+
+        JSONObject jsonObject = new JSONObject();
+        JSONArray sensors = new JSONArray();
+        for (Sensor s : car.sensors) {
+            sensors.put(Double.isFinite(s.getDistance()) ? s.getDistance() : -1);
+        }
+        jsonObject.put("sensors", sensors);
+        jsonObject.put("angle", car.getWheelAngle());
+
+        return jsonObject.toString();
     }
 }

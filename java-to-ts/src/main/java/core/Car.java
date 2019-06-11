@@ -7,10 +7,11 @@ public class Car {
     private final double maxWheelAngle = Math.PI / 180 * 42;    // максимальный угол поворота колеса
     // readonly
     private Track track;
+    private Player driver;                      // водитель машины
     private double maxSpeed;                    // максимальная скорость
-    public int width;                           // длина машины
+    private int width;                          // длина машины
     public int height;                          // ширина машины
-    private double axl;                          // ускорение тачки вперёд
+    private double axl;                         // ускорение тачки вперёд
 
     private double r;                           // расстояние от центра машины до её угловой точки
     private double a;                           // угол Point.angleByPoints(позиция машины, средняя точка машины);
@@ -32,18 +33,19 @@ public class Car {
     public Object image;                        // картинка машины
 
     public double speed = 0;                    // текущая скорость машины
-    public int keys = 0;                        // зажатые кнопки управления
+    //public int keys = 0;                        // зажатые кнопки управления
 
     public double time = 0;                     // время заезда
     public double distance = 0;                 // пройденное расстояние
     public int stage = 0;                       // сегмент трэка на котором находится тачка
     public double fuel = 0;                     // оставшееся количество топлива
 
-    private Sensor[] sensors;                   // сенсоры расстояния
+    public Sensor[] sensors;                   // сенсоры расстояния
     // =====================================
 
-    public Car(Track track, int width, int height, double acceleration, double maxSpeed) {
+    public Car(Track track, Player driver, int width, int height, double acceleration, double maxSpeed) {
         this.track = track;
+        this.driver = driver;
         this.width = width;
         this.height = height;
         this.axl = acceleration;
@@ -54,7 +56,7 @@ public class Car {
         Point midPoint = new Point(width / 2, height / 2);
         a = Point.angleByPoints(_position, midPoint);
 
-        initSensors(5, Math.PI * 2 / 3, 500);
+        initSensors(5, Math.PI * 2 / 3, 1000);
     }
 
     // =====================================
@@ -105,7 +107,7 @@ public class Car {
         } else {
             // ищем точку аккермана
             double ackerL = width / Math.tan(_wheelAngle);
-            ackerR = Math.sqrt(width * width / 4 + ackerL * ackerL);
+            ackerR = Math.sqrt(width * width / 4. + ackerL * ackerL);
             ackerA = _carAngle + (Math.asin(width / (2 * this.ackerR)) + Math.PI / 2) * (_wheelAngle > 0 ? 1 : -1);
             ackerP = Point.getPointByAngle(_position, ackerR, ackerA);
         }
@@ -163,7 +165,7 @@ public class Car {
     // TODO ввести зависимость угла поворота от скорости и времени dt
     private void updateWheelAngle(double dt) {
         // поворачиваем машину вокруг точки аккермана
-        if ((keys & (1 << Key.LEFT.ordinal())) > 0) {
+        if ((driver.keys & (1 << Key.LEFT.ordinal())) > 0) {
             setWheelAngle(_wheelAngle - 2 * Math.PI / 180);
         } else {
             if (_wheelAngle < 0) {
@@ -171,7 +173,7 @@ public class Car {
             }
         }
         // поворачиваем машину вокруг точки аккермана
-        if ((keys & (1 << Key.RIGHT.ordinal())) > 0) {
+        if ((driver.keys & (1 << Key.RIGHT.ordinal())) > 0) {
             setWheelAngle(_wheelAngle + 2 * Math.PI / 180);
         } else {
             if (_wheelAngle > 0) {
@@ -187,7 +189,7 @@ public class Car {
 
         if (fuel > 0) {
             // ускоряемся вперед
-            if ((keys & (1 << Key.FORWARD.ordinal())) > 0) {
+            if ((driver.keys & (1 << Key.FORWARD.ordinal())) > 0) {
                 if (v < 0) {
                     // тормозим
                     calcSpeed(axl * 2, dt, v, 0);
@@ -202,7 +204,7 @@ public class Car {
                 }
             }
             // ускоряемся назад
-            if ((keys & (1 << Key.BACK.ordinal())) > 0) {
+            if ((driver.keys & (1 << Key.BACK.ordinal())) > 0) {
                 if (v > 0) {
                     // тормозим
                     calcSpeed(-axl * 2, dt, 0, v);
@@ -246,7 +248,7 @@ public class Car {
     // требуется ли анимация машины
     public boolean isRequestAnimation() {
         // машина не двигается и колёса стоят ровно, останавливаем анимацию
-        return (keys != 0) || (speed != 0) || (_wheelAngle != 0) || Global.requestAnimationId == null;
+        return (driver.keys != 0) || (speed != 0) || (_wheelAngle != 0) || Global.requestAnimationId == null;
     }
 
     // =====================================
@@ -254,7 +256,7 @@ public class Car {
     private boolean checkCollisions() {
         // считаем что +/-2 зебры - это зона проверки столкновений
         int iMin = Math.max(stage - 2, 0);
-        int iMax = Math.min(stage + 2, track.len - 1);
+        int iMax = Math.min(stage + 2, track.getLength() - 1);
         // проверяем обе стороны
         for (int i = 1; i < 3; i++) {
             for (int j = iMin; j < iMax; j++) {
@@ -273,7 +275,7 @@ public class Car {
     private void updateStageProgress() {
         int st = stage;
         // проверка следующей зебры
-        if (stage < track.len - 1) {
+        if (stage < track.getLength() - 1) {
             st = stage + 1;
             // проверяем диагонали на пересечение зебры
             if (checkStagePass(st) == true) return;
@@ -308,10 +310,10 @@ public class Car {
     // =====================================
     // подготовка к старту
     public void restart() {
-        Utils.debug("Restart");
+        //Utils.debug("Restart");
         Point p = new Point();
         setPosition(p);
-        setAngle(Point.angleByPoints(Global.track.p[0][0], Global.track.p[0][1]));
+        setAngle(Point.angleByPoints(track.p[0][0], track.p[0][1]));
         setWheelAngle(0);
         speed = 0;
         time = 0;

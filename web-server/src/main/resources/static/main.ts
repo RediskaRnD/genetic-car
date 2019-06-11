@@ -7,7 +7,7 @@ import {Line} from "./tools/Line";
 import {Global} from "./core/Global";
 import {Player} from "./core/Player";
 import {Key} from "./core/Key";
-
+import {Bot} from "./core/Bot";
 
 // var core = new Bezier([1,2,3,4]);
 // =====================================================================================================================
@@ -63,7 +63,9 @@ function getTrack(): void {
     Http.onload = () => {
         if (Http.readyState === Http.DONE) {
             if (Http.status === 200) {
-                Global.track = new Track(Http.response.track);
+                Global.track = new Track(0);
+                Global.track.setTrack(Http.response.track);
+                // Global.track = new Track(100);
                 document.dispatchEvent(eventTrackOnLoad);
             }
         }
@@ -80,7 +82,7 @@ function researchCrossPointsWithCurve(): void {
 
     // проверка пересечений с кривой
     if (Global.track) {
-        const tLen = Global.track.len;
+        const tLen = Global.track.getLength();
         if (tLen < 2) return;
 
         // поиск ведем по левой и правой сторонам трека
@@ -159,7 +161,14 @@ function drawTrack(track: Track): void {
     let p: Point[][] = track.p;
     // рисуем обочину
     ctx.lineWidth = Math.round(10 * scale);
+    //ctx.strokeStyle = "#444444";
+    if (Global.enableHideMode == true) {
+        return;
+    }
+    //     ctx.strokeStyle = "#9af9b4";
+    // } else {
     ctx.strokeStyle = "#444444";
+    // }
     // for (let tr = 1; tr < 3; tr++) {
     //     ctx.beginPath();
     //     // for (let i = 0; i < track.len; i++) {
@@ -194,7 +203,7 @@ function drawTrack(track: Track): void {
     // ищем левую часть вышедшую за экран
     let cp: Point = physicalToLogical(new Point(cnv.width, cnv.height));
     let bPrevIn: boolean | undefined = undefined;
-    for (let i = 0; i < track.len; i++) {
+    for (let i = 0; i < track.getLength(); i++) {
         let tp = p[1][i];
         if (tp.x < -offset.x || tp.x > cp.x || tp.y < -offset.y || tp.y > cp.y) {
             // мы за границей экрана
@@ -218,7 +227,7 @@ function drawTrack(track: Track): void {
     ctx.stroke();
     ctx.beginPath();
     bPrevIn = undefined;
-    for (let i = 0; i < track.len; i++) {
+    for (let i = 0; i < track.getLength(); i++) {
         let tp = p[2][i];
         if (tp.x < -offset.x || tp.x > cp.x || tp.y < -offset.y || tp.y > cp.y) {
             // мы за границей экрана
@@ -241,19 +250,22 @@ function drawTrack(track: Track): void {
     }
     ctx.stroke();
 
-    // // рисуем зебру
-    // ctx.lineWidth = 1;
-    // ctx.strokeStyle = "red";
-    // for (let i = 0; i < track.len; i++) {
-    //     if (car.stage - 2 <= i && i <= car.stage + 2) {
-    //         ctx.beginPath();
-    //         let tp = logicalToPhysical(p[1][i]);
-    //         ctx.lineTo(tp.x, tp.y);
-    //         tp = logicalToPhysical(p[2][i]);
-    //         ctx.lineTo(tp.x, tp.y);
-    //         ctx.stroke();
-    //     }
-    // }
+    // рисуем зебру
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "red";
+    for (let i = 0; i < track.getLength(); i++) {
+        ctx.beginPath();
+        let tp = logicalToPhysical(p[1][i]);
+        ctx.lineTo(tp.x, tp.y);
+        tp = logicalToPhysical(p[2][i]);
+        ctx.lineTo(tp.x, tp.y);
+        if (Global.players[0].car.stage - 2 <= i && i <= Global.players[0].car.stage + 2) {
+            ctx.strokeStyle = "red";
+        } else {
+            ctx.strokeStyle = "black";
+        }
+        ctx.stroke();
+    }
     // // рисуем начало трасс
     // ctx.beginPath();
     // let tp = logicalToPhysical(track.p[0][0]);
@@ -328,7 +340,8 @@ function drawSensors(car: Car) {
         ctx.lineTo(tp.x, tp.y);
     });
     ctx.setLineDash([6, 4]);
-    ctx.strokeStyle = "#bbbbbb";
+    //ctx.strokeStyle = "#bbbbbb";
+    ctx.strokeStyle = "#444444";
     ctx.stroke();
 }
 
@@ -379,14 +392,37 @@ function redrawCanvas(): void {
 
     // если машину не трогали то только отрисовываем её старое положение, вернёмся на следующем тике, с нормальным dt
     let requestAnimation = 0;
-    Global.players.forEach(p => {
+    for (let p of Global.players) {
         let car = p.car;
         if (dt > 0.1 && car.speed == 0) dt = 0.01;  // TODO тут как то не красиво
         car.update(dt);
         if (car.isRequestAnimation() == true) {
             requestAnimation++;
         }
-    });
+    }
+
+    // обновляем положение ботов
+    if (Global.enableBots == true) {
+        for (let b of Global.bots) {
+            // едем вперед
+            b.keys = 1 << Key.FORWARD;
+            let dir = b.getDirection();
+            if (dir != 0) {
+                // поворачиваем
+                b.keys |= 1 << (dir < 0 ? Key.LEFT : Key.RIGHT);
+            }
+            if (dt > 0.1 && b.car.speed == 0) dt = 0.01;  // TODO тут как то не красиво
+            b.car.update(dt);
+            if (b.car.isRequestAnimation() == true) {
+                requestAnimation++;
+            }
+        }
+    } else {
+        for (let b of Global.bots) {
+            b.keys = 0;
+        }
+    }
+
     if (requestAnimation == 0) {
         cancelAnimationFrame(Global.requestAnimationId);
         Global.requestAnimationId = null;
@@ -396,7 +432,7 @@ function redrawCanvas(): void {
         // помещаем тачку в центр
         // offset.x = cnv.width / (2 * scale) - Global.car.getPosition().x;    // TODO не уверен что стало лучше
         // offset.y = cnv.height / (2 * scale) - Global.car.getPosition().y;
-        offset = Point.sub(new Point(cnv.width / (2 * scale), cnv.height / (2 * scale)), Global.players[0].car.getPosition());
+        offset = Point.sub(new Point(cnv.width / (2 * scale), cnv.height / (2 * scale)), Global.bots[0].car.getPosition());
     } else {
         // переносим центральную точку обзора в центр нового канваса.
         // let xOff = (cnv.clientWidth - cnv.width) / 2;
@@ -411,10 +447,14 @@ function redrawCanvas(): void {
     drawLines();
     drawCrossPoints();
     //drawGrid();
-    Global.players.forEach(p => {
+    for (let p of Global.players) {
         drawSensors(p.car);
         drawCar(p.car);
-    });
+    }
+    for (let b of Global.bots) {
+        drawSensors(b.car);
+        drawCar(b.car);
+    }
 }
 
 // =====================================================================================================================
@@ -479,20 +519,29 @@ function fillVars(): void {
     //     CnvCWH:[${cnv.clientWidth}, ${cnv.clientHeight}]
     //     VirtMP:[${Math.round(virtualMousePosition.x)}, ${Math.round(virtualMousePosition.y)}]`;
 
-    str += `\n\n${Global.players[0].name}`;
-    let car = Global.players[0].car;
+    for (let p of Global.players) {
+        str += `\n\n${p.name}`;
+        str += `\nSpeed: ${Math.round(p.car.speed)}`;
+        str += `\nDist : ${Math.round(p.car.distance)}`;
+        str += `\nStage: ${p.car.stage}`;
+        str += `\nKeys : ${p.keys}`;
+        str += "\n";
+        p.car.sensors.forEach((s, i) => {
+            str += `\nS[${i}] : ${s.getDistance()}`;
+        });
+    }
 
-    str += `\nSpeed: ${Math.round(car.speed)}`;
-    str += `\nDist : ${Math.round(car.distance)}`;
-    str += `\nStage: ${car.stage}`;
-    str += `\nKeys : ${car.keys}`;
-
-    str += `\n\n${Global.players[1].name}`;
-    car = Global.players[1].car;
-    str += `\nSpeed: ${Math.round(car.speed)}`;
-    str += `\nDist : ${Math.round(car.distance)}`;
-    str += `\nStage: ${car.stage}`;
-    str += `\nKeys : ${car.keys}`;
+    for (let b of Global.bots) {
+        str += `\n\n${b.name}`;
+        str += `\nSpeed: ${Math.round(b.car.speed)}`;
+        str += `\nDist : ${Math.round(b.car.distance)}`;
+        str += `\nStage: ${b.car.stage}`;
+        str += `\nKeys : ${b.keys}`;
+        str += "\n";
+        b.car.sensors.forEach((s, i) => {
+            str += `\nS[${i}] : ${s.getDistance()}`;
+        });
+    }
 
     //str += `\nCar.p: ${car.getPosition().toString(0)}`;
     // str += `\nAckP : ${car.ackerP.toString(0)}`;
@@ -515,16 +564,16 @@ function fillVars(): void {
 function checkKeyDown(e: KeyboardEvent, player: Player): number {
     switch (e.code) {
         case player.keyCodes[Key.FORWARD]:
-            player.car.keys |= 1;
+            player.keys |= 1;
             return 2;
         case player.keyCodes[Key.BACK]:
-            player.car.keys |= 2;
+            player.keys |= 2;
             return 2;
         case player.keyCodes[Key.LEFT]:
-            player.car.keys |= 4;
+            player.keys |= 4;
             return 1;
         case player.keyCodes[Key.RIGHT]:
-            player.car.keys |= 8;
+            player.keys |= 8;
             return 1;
     }
     return 0;
@@ -535,75 +584,61 @@ function checkKeyDown(e: KeyboardEvent, player: Player): number {
 function checkKeyUp(e: KeyboardEvent, player: Player) {
     switch (e.code) {
         case player.keyCodes[Key.FORWARD]:
-            player.car.keys &= ~1;
+            player.keys &= ~1;
             return 2;
         case player.keyCodes[Key.BACK]:
-            player.car.keys &= ~2;
+            player.keys &= ~2;
             return 2;
         case player.keyCodes[Key.LEFT]:
-            player.car.keys &= ~4;
+            player.keys &= ~4;
             return 1;
         case player.keyCodes[Key.RIGHT]:
-            player.car.keys &= ~8;
+            player.keys &= ~8;
             return 1;
     }
     return 0;
 }
 
 // =====================================================================================================================
-// инициализируем машины
-// function initCars(quantity: number) {
-//
-//     ctx.globalCompositeOperation = "source-over";   // TODO зачем это здесь?
-//     Utils.debug("cars.init");
-//
-//     Global.cars = new Array(quantity);
-//     for (let i = 0; i < quantity; i++) {
-//         Global.cars[i] = new Car(Global.track, 60, 30, 60, 300);
-//         Global.cars[i].image = new Image();
-//         let src;
-//         switch (i) {
-//             case 0:
-//                 src = "images\\BlueCar.svg";
-//                 break;
-//             default:
-//                 src = "images\\WhiteCar.png";
-//         }
-//         Global.cars[i].image.src = src;
-//         Global.cars[i].image.onload = () => {
-//             Utils.debug("image[" + i + "]");
-//             Global.cars[i].restart();
-//             if (Global.requestAnimationId === null) redrawCanvas();
-//         };
-//     }
-// }
-// =====================================================================================================================
 // инициализация игроков
 function initPlayers() {
     Global.players = [];
     Global.players.push(new Player("Rediska"));
-    let player = Global.players[0];
-    player.setKeys("KeyW", "KeyS", "KeyA", "KeyD");
-    player.car = new Car(Global.track, 60, 30, 60, 300);
-    player.car.image = new Image();
-    player.car.image.src = "images\\BlueCar.svg";
-    player.car.image.onload = () => {
+    let p = Global.players[0];
+    p.setKeys("KeyW", "KeyS", "KeyA", "KeyD");
+    p.car = new Car(Global.track, p, 60, 30, 60, 300);
+    p.car.image = new Image();
+    p.car.image.src = "images\\BlueCar.svg";
+    p.car.image.onload = () => {
         Utils.debug(Global.players[0].name + " car is ready!");
         Global.players[0].car.restart();
         if (Global.requestAnimationId === null) redrawCanvas();
     };
 
-    Global.players.push(new Player("RDX"));
-    player = Global.players[1];
-    player.setKeys("ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight");
-    player.car = new Car(Global.track, 60, 30, 60, 300);
-    player.car.image = new Image();
-    player.car.image.src = "images\\WhiteCar.png";
-    player.car.image.onload = () => {
-        Utils.debug(Global.players[1].name + " car is ready!");
-        Global.players[1].car.restart();
+    Global.bots = [];
+    Global.bots.push(new Bot("Vasia"));
+    let b = Global.bots[0];
+    b.setKeys("ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight");
+    b.car = new Car(Global.track, b, 60, 30, 60, 300);
+    b.car.image = new Image();
+    b.car.image.src = "images\\WhiteCar.png";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[0].name + " car is ready!");
+        Global.bots[0].car.restart();
         if (Global.requestAnimationId === null) redrawCanvas();
     };
+
+    // Global.players.push(new Player("RDX"));
+    // player = Global.players[1];
+    // player.setKeys("ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight");
+    // player.car = new Car(Global.track, 60, 30, 60, 300);
+    // player.car.image = new Image();
+    // player.car.image.src = "images\\WhiteCar.png";
+    // player.car.image.onload = () => {
+    //     Utils.debug(Global.players[1].name + " car is ready!");
+    //     Global.players[1].car.restart();
+    //     if (Global.requestAnimationId === null) redrawCanvas();
+    // };
 }
 
 // =====================================================================================================================
@@ -612,7 +647,7 @@ function findIntersectionsWithTrack() {
     // проверка пересечений с кривой
     if (Global.track) {
         for (let tr = 1; tr < 3; tr++) {
-            for (let i = 0; i < Global.track.len - 1; i++) {
+            for (let i = 0; i < Global.track.getLength() - 1; i++) {
                 let p = Line.getCrossPoints(
                     Global.track.p[tr][i],
                     Global.track.p[tr][i + 1],
@@ -671,7 +706,7 @@ window.onload = () => {
         offset.x = cnv.width / 2;
         offset.y = cnv.height / 2;
         researchCrossPointsWithCurve();
-        // если загрузились все файлы - начинаем подготовку к старту. // TODO а тут точно произошла загрузка всех файлов?
+        // если загрузились все файлы - начинаем подготовку к старту.
         if (Global.track != null) {
             //initCars(2);
             initPlayers();
@@ -757,14 +792,22 @@ window.onload = () => {
 
         switch (e.target) {
             case cnv:
-                let redrawRequest = checkKeyDown(e, Global.players[0]);
-                if (redrawRequest == 0) redrawRequest |= checkKeyDown(e, Global.players[1]);
+                let redrawRequest = 0;
+                for (let p of Global.players) {
+                    redrawRequest |= checkKeyDown(e, p);
+                }
+                if (e.code === "KeyZ") {
+                    // TODO нужна ли тут проверка на длинну массива?
+                    redrawRequest = 2;
+                    Global.enableBots = !Global.enableBots;
+                }
                 switch (redrawRequest) {
                     case 1:
                         // просто перерисовываем канвас
                         if (Global.requestAnimationId === null) redrawCanvas();
                         break;
                     case 2:
+                    case 3:
                         // запускаем анимацию
                         if (Global.requestAnimationId === null) {
                             Utils.debug("anim+");
@@ -775,6 +818,10 @@ window.onload = () => {
                 if (e.code === "Space") {
                     if (e.ctrlKey === true) {
                         getTrack();
+                    }
+                    if (e.shiftKey === true) {
+                        Global.enableHideMode = !Global.enableHideMode;
+                        drawTrack(Global.track);
                     }
                     break;
                 }
@@ -795,8 +842,11 @@ window.onload = () => {
     document.addEventListener("keyup", e => {
         // TODO либо удалить redrawRequest, либо добавить
         if (e.target === cnv) {
-            let redrawRequest = checkKeyUp(e, Global.players[0]);
-            if (redrawRequest == 0) redrawRequest |= checkKeyUp(e, Global.players[1]);
+            // let redrawRequest = 0;
+            for (let p of Global.players) {
+                // redrawRequest |= checkKeyUp(e, p);
+                checkKeyUp(e, p);
+            }
         }
     });
     // =====================================
