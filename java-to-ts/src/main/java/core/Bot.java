@@ -42,7 +42,7 @@ public class Bot extends Player {
         int iMax = 0;
         int i = 0;
         for (Sensor s : car.sensors) {
-            double dist = s.getDistance();
+            double dist = s.distance;
             if (max < dist) {
                 max = dist;
                 iMax = i;
@@ -68,7 +68,7 @@ public class Bot extends Player {
         // ищем самую дальнюю точку и рулим в её сторону
         i = 0;
         for (Sensor s : car.sensors) {
-            if (s.getDistance() == max) {
+            if (s.distance == max) {
                 if (iMax < len / 2) {
                     dir += 1;
                 } else if (iMax >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров
@@ -81,23 +81,13 @@ public class Bot extends Player {
     }
 
     private int algorithm_b(double distance1, double distance2) {
-        double max = 0;
-        int iMin = 0;
-        int iMax = 0;
-        int i = 0;
-        for (Sensor s : car.sensors) {
-            double dist = s.getDistance();
-            if (max < dist) {
-                max = dist;
-                iMax = i;
-            }
-        }
+
         // если находимся слишком близко к обочине - рулим в другую сторону
         int dir = 0;
         int len = car.sensors.length;
         if (len > 1) {
-            double d1 = car.sensors[0].getDistance();
-            double d2 = car.sensors[len - 1].getDistance();
+            double d1 = car.sensors[0].distance;
+            double d2 = car.sensors[len - 1].distance;
             if (d1 < d2 && d1 < car.height * distance1) {
                 return -1;
             } else if (d1 > d2 && d2 < car.height * distance1) {
@@ -105,8 +95,8 @@ public class Bot extends Player {
             }
         }
         if (len > 3) {
-            double d1 = car.sensors[1].getDistance();
-            double d2 = car.sensors[len - 2].getDistance();
+            double d1 = car.sensors[1].distance;
+            double d2 = car.sensors[len - 2].distance;
             if (d1 < d2 && d1 < car.height * distance2) {
                 return -1;
             } else if (d1 > d2 && d2 < car.height * distance2) {
@@ -114,9 +104,19 @@ public class Bot extends Player {
             }
         }
         // ищем самую дальнюю точку и рулим в её сторону
+        double max = 0;
+        int iMax = 0;
+        int i = 0;
+        for (Sensor s : car.sensors) {
+            double dist = s.distance;
+            if (max < dist) {
+                max = dist;
+                iMax = i;
+            }
+        }
         i = 0;
         for (Sensor s : car.sensors) {
-            if (s.getDistance() == max) {
+            if (s.distance == max) {
                 if (iMax < len / 2) {
                     dir += 1;
                 } else if (iMax >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров

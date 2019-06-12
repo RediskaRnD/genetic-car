@@ -55,7 +55,7 @@ public class Car {
         Point midPoint = new Point(width / 2d, height / 2d);
         a = Point.angleByPoints(_position, midPoint);
 
-        initSensors(5, Math.PI * 2 / 3, 1000);
+        initSensors(5, Math.PI * 2 / 3, 500);
     }
 
     public Car() {
@@ -64,7 +64,7 @@ public class Car {
         Point midPoint = new Point(width / 2d, height / 2d);
         a = Point.angleByPoints(_position, midPoint);
 
-        initSensors(5, Math.PI * 2 / 3, 1000);
+        initSensors(5, Math.PI * 2 / 3, 500);
     }
 
     // =====================================
@@ -256,10 +256,7 @@ public class Car {
     // =====================================
     // обновляем показания сенсоров
     private void updateSensors() {
-        for (Sensor sens : sensors) {
-            sens.getIntersection();
-            sens.getDistance();
-        }
+        for (Sensor s : sensors) s.update();
     }
 
     // =====================================
@@ -337,7 +334,9 @@ public class Car {
         time = 0;
         distance = 0;
         stage = 0;
+        crashes = 0;
         fuel = 1;
+        durability = 1;
         isReady = true;
     }
 }

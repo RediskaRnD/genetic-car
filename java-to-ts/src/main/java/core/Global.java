@@ -10,4 +10,5 @@ public class Global {
     public static boolean enableBots;
     public static boolean isFollowMode = true;
     public static Car followTarget;
+    public static boolean enableZebra = false;
 }

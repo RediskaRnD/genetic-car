@@ -8,8 +8,6 @@ import {Global} from "./core/Global";
 import {Player} from "./core/Player";
 import {Key} from "./core/Key";
 import {Bot} from "./core/Bot";
-
-// var core = new Bezier([1,2,3,4]);
 // =====================================================================================================================
 
 let log: HTMLElement;
@@ -257,20 +255,22 @@ function drawTrack(track: Track): void {
     ctx.stroke();
 
     // рисуем зебру
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "red";
-    for (let i = 0; i < track.getLength(); ++i) {
-        ctx.beginPath();
-        let tp = logicalToPhysical(p[1][i]);
-        ctx.lineTo(tp.x, tp.y);
-        tp = logicalToPhysical(p[2][i]);
-        ctx.lineTo(tp.x, tp.y);
-        if (Global.players[0].car.stage - 2 <= i && i <= Global.players[0].car.stage + 2) {
-            ctx.strokeStyle = "red";
-        } else {
-            ctx.strokeStyle = "black";
+    if (Global.enableZebra === true) {
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "red";
+        for (let i = 0; i < track.getLength(); ++i) {
+            ctx.beginPath();
+            let tp = logicalToPhysical(p[1][i]);
+            ctx.lineTo(tp.x, tp.y);
+            tp = logicalToPhysical(p[2][i]);
+            ctx.lineTo(tp.x, tp.y);
+            if (Global.followTarget.stage - 2 <= i && i <= Global.followTarget.stage + 2) {
+                ctx.strokeStyle = "red";
+            } else {
+                ctx.strokeStyle = "black";
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
     }
     // // рисуем начало трасс
     // ctx.beginPath();
@@ -340,7 +340,7 @@ function drawSensors(car: Car) {
     ctx.beginPath();
     let p = logicalToPhysical(car.getPosition());
     for (let s of car.sensors) {
-        if (s.intersection == null) return;
+        if (s.intersection == null) continue;
         ctx.moveTo(p.x, p.y);
         let tp = logicalToPhysical(s.intersection);
         ctx.lineTo(tp.x, tp.y);
@@ -417,7 +417,7 @@ function redrawCanvas(): void {
                 // поворачиваем
                 b.keys |= 1 << (dir < 0 ? Key.LEFT : Key.RIGHT);
             }
-            if (dt > 0.1 && b.car.speed == 0) dt = 0.01;  // TODO тут как то не красиво
+            if (dt > 0.1) dt = 0.01;  // TODO тут как то не красиво
             b.car.update(dt);
             if (b.car.isRequestAnimation() == true) {
                 ++requestAnimation;
@@ -525,9 +525,9 @@ function fillVars(): void {
         str += `\nDist : ${Math.round(p.car.distance)}`;
         str += `\nStage: ${p.car.stage}`;
         str += `\nKeys : ${p.keys}\n`;
-        // p.car.sensors.forEach((s, i) => {
-        //     str += `S[${i}] : ${Math.round(s.getDistance())},`;
-        // });
+        for (let s of p.car.sensors) {
+            str += `${Math.round(s.distance)},`;
+        }
     }
 
     for (let b of Global.bots) {
@@ -536,11 +536,11 @@ function fillVars(): void {
         str += `\nDist : ${Math.round(b.car.distance)}`;
         str += `\nStage: ${b.car.stage}`;
         str += `\nCrashes: ${b.car.crashes}`;
-        str += `\nDurability: ${Math.round(b.car.durability * 1000)/10}`;
-        //str += `\nKeys : ${b.keys}\n`;
-        // b.car.sensors.forEach((s, i) => {
-        //     str += `S[${i}] : ${Math.round(s.getDistance())},`;
-        // });
+        str += `\nDurability: ${Math.round(b.car.durability * 1000) / 10}`;
+        str += `\nKeys : ${b.keys}\n`;
+        for (let s of b.car.sensors) {
+            str += `${Math.round(s.distance)},`;
+        }
     }
 
     //str += `\nCar.p: ${car.getPosition().toString(0)}`;
@@ -815,9 +815,10 @@ window.onload = () => {
             if (Global.bots.length === 0) {
                 createBots();
             }
-            if (Global.players.length === 0) {
-                initPlayers();
-            }
+            // if (Global.players.length === 0) {
+            //     initPlayers();
+            // }
+            // выбираем за кем будем следить
             if (Global.followTarget === null && Global.isFollowMode === true) {
                 if (Global.bots.length) {
                     Global.followTarget = Global.bots[0].car;
@@ -928,6 +929,11 @@ window.onload = () => {
                 if (e.code === "KeyZ") {
                     redrawRequest = 2;
                     Global.enableBots = !Global.enableBots;
+                    break;
+                }
+                if (e.code === "KeyT") {
+                    redrawRequest |= 1;
+                    Global.enableZebra = !Global.enableZebra;
                     break;
                 }
                 if (e.code === "Space") {

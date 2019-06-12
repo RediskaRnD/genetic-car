@@ -70,7 +70,7 @@ public class TrackController {
         JSONObject jsonObject = new JSONObject();
         JSONArray sensors = new JSONArray();
         for (Sensor s : car.sensors) {
-            sensors.put(Double.isFinite(s.getDistance()) ? s.getDistance() : -1);
+            sensors.put(Double.isFinite(s.distance) ? s.distance : -1);
         }
         jsonObject.put("sensors", sensors);
         jsonObject.put("angle", car.getWheelAngle());
