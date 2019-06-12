@@ -8,7 +8,7 @@ public class Car {
     private final int impactsToDeath = 3;       // количество столкновений на полной скорости которое не переживет машина
     public Track track;                         // трасса
     public Player driver;                       // водитель машины
-    private double maxSpeed = 300;              // максимальная скорость
+    private double maxSpeed = 500;              // максимальная скорость
     private int width = 60;                     // длина машины
     public int height = 30;                     // ширина машины
     private double axl = 60;                    // ускорение тачки вперёд
@@ -55,7 +55,7 @@ public class Car {
         Point midPoint = new Point(width / 2d, height / 2d);
         a = Point.angleByPoints(_position, midPoint);
 
-        initSensors(5, Math.PI * 2 / 3, 500);
+        initSensors(5, Math.PI * 2 / 3, 5000);
     }
 
     public Car() {
@@ -64,7 +64,7 @@ public class Car {
         Point midPoint = new Point(width / 2d, height / 2d);
         a = Point.angleByPoints(_position, midPoint);
 
-        initSensors(5, Math.PI * 2 / 3, 500);
+        initSensors(5, Math.PI * 2 / 3, 5000);
     }
 
     // =====================================
@@ -139,6 +139,8 @@ public class Car {
     // =====================================
     // обновление всех параметров машины
     public void update(double dt) {
+        if (isAlive() == false) return;
+        if (dt > 0.1 && speed == 0) dt = 0.01;
         updateSpeed(dt);
         updateWheelAngle(dt);
         updatePosition(dt);
@@ -155,8 +157,7 @@ public class Car {
     // =====================================
     // расчитываем оставшуюся прочность машины
     private void updateDurability() {
-
-        durability -= speed < 10 ? 0 : speed / maxSpeed / impactsToDeath;
+        durability -= Math.max(0.005, speed / maxSpeed / impactsToDeath);
         if (durability < 0.005) durability = 0;
     }
 
@@ -319,7 +320,7 @@ public class Car {
     // отскок машины от препятствия
     private void recoil(double dt) {
         setPosition(Point.getPointByAngle(_position, speed * dt * 2, _carAngle - Math.PI));
-        speed = -speed / 3;
+        speed = -Math.min(speed / 3, 80);
     }
 
     // =====================================
@@ -339,5 +340,11 @@ public class Car {
         durability = 1;
         isReady = true;
         updateSensors();
+    }
+
+    // =====================================
+    // двигается ли еще машина
+    public boolean isAlive() {
+        return (speed != 0 || (fuel != 0 && durability != 0));
     }
 }

@@ -118,9 +118,8 @@ public class Track {
         SetMinMax();
     }
     // =====================================
-
+    // TODO Надо сделать непересекающуюся дорогу. Иначе не работает sensor.
     private void Generate(int length) {
-
         Point p = new Point();
         double previousAngle = 0;
         double newAngle = Math.random() * 2 * Math.PI;

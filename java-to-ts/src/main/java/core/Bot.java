@@ -39,13 +39,11 @@ public class Bot extends Player {
         double min = 1.0 / 0.0;     //Double.POSITIVE_INFINITY;
         double max = 0;
         int iMin = 0;
-        int iMax = 0;
         int i = 0;
         for (Sensor s : car.sensors) {
             double dist = s.distance;
             if (max < dist) {
                 max = dist;
-                iMax = i;
             }
             if (min > dist) {
                 min = dist;
@@ -69,9 +67,9 @@ public class Bot extends Player {
         i = 0;
         for (Sensor s : car.sensors) {
             if (s.distance == max) {
-                if (iMax < len / 2) {
+                if (i < len / 2) {
                     dir += 1;
-                } else if (iMax >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров
+                } else if (i >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров
                     dir -= 1;
                 }
             }
@@ -105,22 +103,20 @@ public class Bot extends Player {
         }
         // ищем самую дальнюю точку и рулим в её сторону
         double max = 0;
-        int iMax = 0;
         int i = 0;
         for (Sensor s : car.sensors) {
             double dist = s.distance;
             if (max < dist) {
                 max = dist;
-                iMax = i;
             }
             ++i;
         }
         i = 0;
         for (Sensor s : car.sensors) {
             if (s.distance == max) {
-                if (iMax < len / 2) {
+                if (i < len / 2) {
                     dir += 1;
-                } else if (iMax >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров
+                } else if (i >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров
                     dir -= 1;
                 }
             }

@@ -400,9 +400,8 @@ function redrawCanvas(): void {
     let requestAnimation = 0;
     for (let p of Global.players) {
         let car = p.car;
-        if (dt > 0.1 && car.speed == 0) dt = 0.01;  // TODO тут как то не красиво
         car.update(dt);
-        if (car.isRequestAnimation() == true) {
+        if (car.isRequestAnimation() === true) {
             ++requestAnimation;
         }
     }
@@ -417,7 +416,6 @@ function redrawCanvas(): void {
                 // поворачиваем
                 b.keys |= 1 << (dir < 0 ? Key.LEFT : Key.RIGHT);
             }
-            if (dt > 0.1) dt = 0.01;  // TODO тут как то не красиво
             b.car.update(dt);
             if (b.car.isRequestAnimation() == true) {
                 ++requestAnimation;
@@ -766,7 +764,7 @@ function findIntersectionsWithTrack() {
         }
     }
 }
-
+// =====================================================================================================================
 // поиск новых пересечений с себе подобными
 function findSelfIntersections() {
     const length = pointsOfLines.length;
@@ -783,6 +781,16 @@ function findSelfIntersections() {
                 crossPointsSelf.push(cp);
             }
         }
+    }
+}
+// =====================================================================================================================
+// рестарт всех машин
+function restartCars() {
+    for (let p of Global.players) {
+        p.car.restart();
+    }
+    for (let b of Global.bots) {
+        b.car.restart();
     }
 }
 
@@ -917,12 +925,7 @@ window.onload = () => {
                 // рестарт той же трассы
                 if (e.code === "KeyR") {
                     redrawRequest |= 1;
-                    for (let p of Global.players) {
-                        p.car.restart();
-                    }
-                    for (let b of Global.bots) {
-                        b.car.restart();
-                    }
+                    restartCars();
                     break;
                 }
                 // запуск/остановка ботов
@@ -938,35 +941,36 @@ window.onload = () => {
                 }
                 if (e.code === "Space") {   // TODO не работает redraw при getTrack
                     if (e.ctrlKey === true) {
-                        getTrack();
                         redrawRequest |= 1;
+                        getTrack();
+                        restartCars();
                     }
                     if (e.shiftKey === true) {
-                        Global.enableBlindMode = !Global.enableBlindMode;
                         redrawRequest |= 1;
+                        Global.enableBlindMode = !Global.enableBlindMode;
                     }
                     break;
                 }
                 // переключение камеры на игрока
                 if (e.code === "Backquote") {
                     if (Global.players.length > 0) {
+                        redrawRequest |= 1;
                         Global.isFollowMode = true;
                         Global.followTarget = Global.players[0].car;
                         Utils.debug(`Follow ${Global.players[0].name}`);
-                        redrawRequest |= 1;
                     }
                     break;
                 }
                 // переключение камеры на ботов
                 let k = +e.key;
                 if (isNaN(k)) return;
+                redrawRequest |= 1;
                 k = k ? k - 1 : 9;
                 if (k < Global.bots.length) {
                     Global.isFollowMode = true;
                     Global.followTarget = Global.bots[k].car;
                     Utils.debug(`Follow ${Global.bots[k].name}`);
                 }
-                redrawRequest |= 1;
                 break;
             case input:
                 if (e.code === "Enter") {
