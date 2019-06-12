@@ -521,26 +521,26 @@ function fillVars(): void {
 
     for (let p of Global.players) {
         str += `\n${p.name}`;
-        str += `\nSpeed: ${Math.round(p.car.speed)}`;
+        str += `\tSpeed: ${Math.round(p.car.speed)}`;
         str += `\nDist : ${Math.round(p.car.distance)}`;
-        str += `\nStage: ${p.car.stage}`;
-        str += `\nKeys : ${p.keys}\n`;
-        for (let s of p.car.sensors) {
-            str += `${Math.round(s.distance)},`;
-        }
+        str += `\tStage: ${p.car.stage}`;
+        // str += `\nKeys : ${p.keys}\n`;
+        // for (let s of p.car.sensors) {
+        //     str += `${Math.round(s.distance)},`;
+        // }
     }
 
     for (let b of Global.bots) {
         str += `\n${b.name}`;
-        str += `\nSpeed: ${Math.round(b.car.speed)}`;
+        str += `\tSpeed: ${Math.round(b.car.speed)}`;
         str += `\nDist : ${Math.round(b.car.distance)}`;
-        str += `\nStage: ${b.car.stage}`;
+        str += `\tStage: ${b.car.stage}`;
         str += `\nCrashes: ${b.car.crashes}`;
-        str += `\nDurability: ${Math.round(b.car.durability * 1000) / 10}`;
-        str += `\nKeys : ${b.keys}\n`;
-        for (let s of b.car.sensors) {
-            str += `${Math.round(s.distance)},`;
-        }
+        str += `\tDurability: ${Math.round(b.car.durability * 1000) / 10}`;
+        // str += `\nKeys : ${b.keys}\n`;
+        // for (let s of b.car.sensors) {
+        //     str += `${Math.round(s.distance)},`;
+        // }
     }
 
     //str += `\nCar.p: ${car.getPosition().toString(0)}`;
@@ -815,9 +815,9 @@ window.onload = () => {
             if (Global.bots.length === 0) {
                 createBots();
             }
-            // if (Global.players.length === 0) {
-            //     initPlayers();
-            // }
+            if (Global.players.length === 0) {
+                initPlayers();
+            }
             // выбираем за кем будем следить
             if (Global.followTarget === null && Global.isFollowMode === true) {
                 if (Global.bots.length) {
@@ -936,9 +936,10 @@ window.onload = () => {
                     Global.enableZebra = !Global.enableZebra;
                     break;
                 }
-                if (e.code === "Space") {
+                if (e.code === "Space") {   // TODO не работает redraw при getTrack
                     if (e.ctrlKey === true) {
                         getTrack();
+                        redrawRequest |= 1;
                     }
                     if (e.shiftKey === true) {
                         Global.enableBlindMode = !Global.enableBlindMode;
@@ -946,9 +947,19 @@ window.onload = () => {
                     }
                     break;
                 }
-                // переключение камеры
+                // переключение камеры на игрока
+                if (e.code === "Backquote") {
+                    if (Global.players.length > 0) {
+                        Global.isFollowMode = true;
+                        Global.followTarget = Global.players[0].car;
+                        Utils.debug(`Follow ${Global.players[0].name}`);
+                        redrawRequest |= 1;
+                    }
+                    break;
+                }
+                // переключение камеры на ботов
                 let k = +e.key;
-                if (k === NaN) return;
+                if (isNaN(k)) return;
                 k = k ? k - 1 : 9;
                 if (k < Global.bots.length) {
                     Global.isFollowMode = true;

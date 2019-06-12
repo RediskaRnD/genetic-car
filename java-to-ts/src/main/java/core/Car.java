@@ -338,5 +338,6 @@ public class Car {
         fuel = 1;
         durability = 1;
         isReady = true;
+        updateSensors();
     }
 }

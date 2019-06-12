@@ -18,8 +18,8 @@ public class Track {
     public double yMax = 0;
     // =====================================
 
-    public Track(int length)  {
-        if (length < 2) return;
+    public Track(int length) {
+        length = Math.max(2, length);
         Generate(length);
         SetMinMax();
     }

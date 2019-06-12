@@ -113,6 +113,7 @@ public class Bot extends Player {
                 max = dist;
                 iMax = i;
             }
+            ++i;
         }
         i = 0;
         for (Sensor s : car.sensors) {

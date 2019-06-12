@@ -21,7 +21,7 @@ import java.util.HashMap;
 @Controller
 public class TrackController {
 
-    private Track track = new Track(1000);
+    private Track track = new Track(1000);      // TODO почему тут 1000?
 
     @Autowired
     private Competition competition;
@@ -56,7 +56,7 @@ public class TrackController {
         track.setAngle(angle);
         track.setWidthMin(widthMin);
         track.setWidthMax(widthMax);
-        track = new Track(track.getLength());
+        //track = new Track(track.getLength()); // TODO что за бред? зачем это? как-то связано с тем что track надо пересоздавать (new Track)
         return "/track";
     }
 
