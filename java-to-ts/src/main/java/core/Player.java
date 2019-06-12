@@ -7,8 +7,10 @@ public class Player {
     public String[] keyCodes = new String[Key.size.ordinal()];      // назначенные кнопки
     public Car car;                                                 // машина игрока
 
-    public Player(String name) {
+    public Player(String name, Car car) {
         this.name = name;
+        this.car = car;
+        car.driver = this;
     }
 
     public void setKeys(String forward, String back, String left, String right) {

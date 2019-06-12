@@ -26,7 +26,7 @@ public class Track {
     // =====================================
 
     private void SetMinMax() {
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length; ++i) {
             xMin = Math.min(xMin, p[0][i].x);
             yMin = Math.min(yMin, p[0][i].y);
             xMax = Math.max(xMax, p[0][i].x);
@@ -136,7 +136,7 @@ public class Track {
 
         double w = (widthMax + widthMin) / 2;
 
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < length; ++i) {
             // создаём центральную полосу трека
             this.p[0][i] = p;
             newAngle += angle * (Math.random() - 0.5);

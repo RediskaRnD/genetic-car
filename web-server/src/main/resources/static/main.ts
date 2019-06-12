@@ -27,8 +27,6 @@ const eventTrackOnLoad: CustomEvent = new CustomEvent("onLoad");
 let lastTimeTick: number = 0;
 let fps: number = 0;
 
-let isFollowMode = true;
-
 // =====================================================================================================================
 
 // Canvas
@@ -65,7 +63,14 @@ function getTrack(): void {
             if (Http.status === 200) {
                 Global.track = new Track(0);
                 Global.track.setTrack(Http.response.track);
-                // Global.track = new Track(100);
+                //Global.track = new Track(100);
+                // обновляем у всех трассу
+                for (let p of Global.players) {
+                    p.car.track = Global.track;
+                }
+                for (let b of Global.bots) {
+                    b.car.track = Global.track;
+                }
                 document.dispatchEvent(eventTrackOnLoad);
             }
         }
@@ -86,12 +91,12 @@ function researchCrossPointsWithCurve(): void {
         if (tLen < 2) return;
 
         // поиск ведем по левой и правой сторонам трека
-        for (let tr = 1; tr < 3; tr++) {
+        for (let tr = 1; tr < 3; ++tr) {
             // отсекаем НЕпарную точку
             const numOfPoints = pointsOfLines.length - pointsOfLines.length % 2;
             // идём по всем точкам линий
             for (let i = 0; i < numOfPoints - 1; i += 2) {
-                for (let j = 0; j < tLen - 1; j++) {
+                for (let j = 0; j < tLen - 1; ++j) {
                     let p = Line.getCrossPoints(
                         Global.track.p[tr][j],
                         Global.track.p[tr][j + 1],
@@ -112,7 +117,7 @@ function researchCrossPointsWithCurve(): void {
 // отрисовываем все точки пересечения
 function drawCrossPoints(): void {
 
-    for (let i = 0; i < crossPointsSelf.length; i++) {
+    for (let i = 0; i < crossPointsSelf.length; ++i) {
         const p = crossPointsSelf[i];
         const tp = logicalToPhysical(p);
         ctx.beginPath();
@@ -122,7 +127,7 @@ function drawCrossPoints(): void {
         ctx.stroke();
     }
 
-    for (let i = 0; i < crossPointsWithCurve.length; i++) {
+    for (let i = 0; i < crossPointsWithCurve.length; ++i) {
         const p = crossPointsWithCurve[i];
         const tp = logicalToPhysical(p);
         ctx.beginPath();
@@ -141,7 +146,7 @@ function drawLines(): void {
     ctx.strokeStyle = "black";
 
     let numOfPoints = pointsOfLines.length;
-    for (let i = 0; i < numOfPoints; i++) {
+    for (let i = 0; i < numOfPoints; ++i) {
         if (i % 2 == 0) {
             ctx.beginPath();
         }
@@ -162,16 +167,17 @@ function drawTrack(track: Track): void {
     // рисуем обочину
     ctx.lineWidth = Math.round(10 * scale);
     //ctx.strokeStyle = "#444444";
-    if (Global.enableHideMode == true) {
+    if (Global.enableBlindMode == true) {
         return;
     }
     //     ctx.strokeStyle = "#9af9b4";
     // } else {
+    ctx.setLineDash([]);    // solid line
     ctx.strokeStyle = "#444444";
     // }
-    // for (let tr = 1; tr < 3; tr++) {
+    // for (let tr = 1; tr < 3; ++tr) {
     //     ctx.beginPath();
-    //     // for (let i = 0; i < track.len; i++) {
+    //     // for (let i = 0; i < track.len; ++i) {
     //     //
     //     //     // var curve = new Bezier(150,40 , 80,30 , 105,150);
     //     //     //
@@ -183,7 +189,7 @@ function drawTrack(track: Track): void {
     //     //     let tp = logicalToPhysical(p[tr][i]);
     //     //     ctx.lineTo(tp.x, tp.y);
     //     // }
-    //     for (let i = car.stage; i < track.len; i++) {
+    //     for (let i = car.stage; i < track.len; ++i) {
     //         let tp = logicalToPhysical(p[tr][i]);
     //         ctx.lineTo(tp.x, tp.y);
     //         if (car.stage < i) {
@@ -203,7 +209,7 @@ function drawTrack(track: Track): void {
     // ищем левую часть вышедшую за экран
     let cp: Point = physicalToLogical(new Point(cnv.width, cnv.height));
     let bPrevIn: boolean | undefined = undefined;
-    for (let i = 0; i < track.getLength(); i++) {
+    for (let i = 0; i < track.getLength(); ++i) {
         let tp = p[1][i];
         if (tp.x < -offset.x || tp.x > cp.x || tp.y < -offset.y || tp.y > cp.y) {
             // мы за границей экрана
@@ -227,7 +233,7 @@ function drawTrack(track: Track): void {
     ctx.stroke();
     ctx.beginPath();
     bPrevIn = undefined;
-    for (let i = 0; i < track.getLength(); i++) {
+    for (let i = 0; i < track.getLength(); ++i) {
         let tp = p[2][i];
         if (tp.x < -offset.x || tp.x > cp.x || tp.y < -offset.y || tp.y > cp.y) {
             // мы за границей экрана
@@ -253,7 +259,7 @@ function drawTrack(track: Track): void {
     // рисуем зебру
     ctx.lineWidth = 1;
     ctx.strokeStyle = "red";
-    for (let i = 0; i < track.getLength(); i++) {
+    for (let i = 0; i < track.getLength(); ++i) {
         ctx.beginPath();
         let tp = logicalToPhysical(p[1][i]);
         ctx.lineTo(tp.x, tp.y);
@@ -333,12 +339,12 @@ function drawCar(car: Car): void {
 function drawSensors(car: Car) {
     ctx.beginPath();
     let p = logicalToPhysical(car.getPosition());
-    car.sensors.forEach(s => {
+    for (let s of car.sensors) {
         if (s.intersection == null) return;
         ctx.moveTo(p.x, p.y);
         let tp = logicalToPhysical(s.intersection);
         ctx.lineTo(tp.x, tp.y);
-    });
+    }
     ctx.setLineDash([6, 4]);
     //ctx.strokeStyle = "#bbbbbb";
     ctx.strokeStyle = "#444444";
@@ -397,7 +403,7 @@ function redrawCanvas(): void {
         if (dt > 0.1 && car.speed == 0) dt = 0.01;  // TODO тут как то не красиво
         car.update(dt);
         if (car.isRequestAnimation() == true) {
-            requestAnimation++;
+            ++requestAnimation;
         }
     }
 
@@ -414,7 +420,7 @@ function redrawCanvas(): void {
             if (dt > 0.1 && b.car.speed == 0) dt = 0.01;  // TODO тут как то не красиво
             b.car.update(dt);
             if (b.car.isRequestAnimation() == true) {
-                requestAnimation++;
+                ++requestAnimation;
             }
         }
     } else {
@@ -428,19 +434,13 @@ function redrawCanvas(): void {
         Global.requestAnimationId = null;
         Utils.debug("anim-");
     }
-    if (isFollowMode == true) {
-        // помещаем тачку в центр
-        // offset.x = cnv.width / (2 * scale) - Global.car.getPosition().x;    // TODO не уверен что стало лучше
-        // offset.y = cnv.height / (2 * scale) - Global.car.getPosition().y;
-        offset = Point.sub(new Point(cnv.width / (2 * scale), cnv.height / (2 * scale)), Global.bots[0].car.getPosition());
-    } else {
+    if (Global.isFollowMode === false || Global.followTarget === null) {
         // переносим центральную точку обзора в центр нового канваса.
-        // let xOff = (cnv.clientWidth - cnv.width) / 2;
-        // let yOff = (cnv.clientHeight - cnv.height) / 2;
-        // offset.x += xOff / scale;
-        // offset.y += yOff / scale;
         let shift = new Point((cnv.clientWidth - cnv.width) / (2 * scale), (cnv.clientHeight - cnv.height) / (2 * scale));
         offset = Point.sum(shift, offset);
+    } else {
+        // помещаем тачку в центр
+        offset = Point.sub(new Point(cnv.width / (2 * scale), cnv.height / (2 * scale)), Global.followTarget.getPosition());
     }
     fillVars();
     drawTrack(Global.track);
@@ -520,27 +520,27 @@ function fillVars(): void {
     //     VirtMP:[${Math.round(virtualMousePosition.x)}, ${Math.round(virtualMousePosition.y)}]`;
 
     for (let p of Global.players) {
-        str += `\n\n${p.name}`;
+        str += `\n${p.name}`;
         str += `\nSpeed: ${Math.round(p.car.speed)}`;
         str += `\nDist : ${Math.round(p.car.distance)}`;
         str += `\nStage: ${p.car.stage}`;
-        str += `\nKeys : ${p.keys}`;
-        str += "\n";
-        p.car.sensors.forEach((s, i) => {
-            str += `\nS[${i}] : ${s.getDistance()}`;
-        });
+        str += `\nKeys : ${p.keys}\n`;
+        // p.car.sensors.forEach((s, i) => {
+        //     str += `S[${i}] : ${Math.round(s.getDistance())},`;
+        // });
     }
 
     for (let b of Global.bots) {
-        str += `\n\n${b.name}`;
+        str += `\n${b.name}`;
         str += `\nSpeed: ${Math.round(b.car.speed)}`;
         str += `\nDist : ${Math.round(b.car.distance)}`;
         str += `\nStage: ${b.car.stage}`;
-        str += `\nKeys : ${b.keys}`;
-        str += "\n";
-        b.car.sensors.forEach((s, i) => {
-            str += `\nS[${i}] : ${s.getDistance()}`;
-        });
+        str += `\nCrashes: ${b.car.crashes}`;
+        str += `\nDurability: ${Math.round(b.car.durability * 1000)/10}`;
+        //str += `\nKeys : ${b.keys}\n`;
+        // b.car.sensors.forEach((s, i) => {
+        //     str += `S[${i}] : ${Math.round(s.getDistance())},`;
+        // });
     }
 
     //str += `\nCar.p: ${car.getPosition().toString(0)}`;
@@ -602,43 +602,147 @@ function checkKeyUp(e: KeyboardEvent, player: Player) {
 // =====================================================================================================================
 // инициализация игроков
 function initPlayers() {
-    Global.players = [];
-    Global.players.push(new Player("Rediska"));
+    Global.players.push(new Player("Редиска", new Car()));
     let p = Global.players[0];
     p.setKeys("KeyW", "KeyS", "KeyA", "KeyD");
-    p.car = new Car(Global.track, p, 60, 30, 60, 300);
+    p.car.track = Global.track;
     p.car.image = new Image();
-    p.car.image.src = "images\\BlueCar.svg";
+    p.car.image.src = "images\\SimpleDarkBlueCarTopView.svg";
     p.car.image.onload = () => {
-        Utils.debug(Global.players[0].name + " car is ready!");
+        Utils.debug(Global.players[0].name + " ready!");
         Global.players[0].car.restart();
         if (Global.requestAnimationId === null) redrawCanvas();
     };
 
-    Global.bots = [];
-    Global.bots.push(new Bot("Vasia"));
-    let b = Global.bots[0];
-    b.setKeys("ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight");
-    b.car = new Car(Global.track, b, 60, 30, 60, 300);
+    // Global.players.push(new Player("RDX", new Car()));
+    // p = Global.players[1];
+    // p.setKeys("ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight");
+    // p.car.track = Global.track;
+    // p.car.image = new Image();
+    // p.car.image.src = "images\\SimpleRedCarTopView.svg";
+    // p.car.image.onload = () => {
+    //     Utils.debug(Global.players[1].name + " ready!");
+    //     Global.players[1].car.restart();
+    //     if (Global.requestAnimationId === null) redrawCanvas();
+    // };
+}
+
+// =====================================================================================================================
+
+function createBots() {
+
+    let algorithm = 0;
+    Global.bots.push(new Bot("Вася 0", new Car(), algorithm));
+    let b = Global.bots[algorithm];
+    b.car.track = Global.track;
     b.car.image = new Image();
-    b.car.image.src = "images\\WhiteCar.png";
+    b.car.image.src = "images\\SimplePinkCarTopView.svg";
     b.car.image.onload = () => {
-        Utils.debug(Global.bots[0].name + " car is ready!");
+        Utils.debug(Global.bots[0].name + " ready!");
         Global.bots[0].car.restart();
         if (Global.requestAnimationId === null) redrawCanvas();
     };
 
-    // Global.players.push(new Player("RDX"));
-    // player = Global.players[1];
-    // player.setKeys("ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight");
-    // player.car = new Car(Global.track, 60, 30, 60, 300);
-    // player.car.image = new Image();
-    // player.car.image.src = "images\\WhiteCar.png";
-    // player.car.image.onload = () => {
-    //     Utils.debug(Global.players[1].name + " car is ready!");
-    //     Global.players[1].car.restart();
-    //     if (Global.requestAnimationId === null) redrawCanvas();
-    // };
+    algorithm = 1;
+    Global.bots.push(new Bot("Михалыч 1", new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimpleBrightGreenCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[1].name + " ready!");
+        Global.bots[1].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 2;
+    Global.bots.push(new Bot("Колян 2", new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimpleOrangeCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[2].name + " ready!");
+        Global.bots[2].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 3;
+    Global.bots.push(new Bot("Сидоров 3", new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimpleTurquoiseCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[3].name + " ready!");
+        Global.bots[3].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 4;
+    Global.bots.push(new Bot("Караул 4", new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimplePurpleCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[4].name + " ready!");
+        Global.bots[4].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+
+    algorithm = 5;
+    Global.bots.push(new Bot("Bot " + algorithm, new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimplePinkCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[5].name + " ready!");
+        Global.bots[5].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 6;
+    Global.bots.push(new Bot("Bot " + algorithm, new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimpleBrightGreenCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[6].name + " ready!");
+        Global.bots[6].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 7;
+    Global.bots.push(new Bot("Bot " + algorithm, new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimpleOrangeCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[7].name + " ready!");
+        Global.bots[7].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 8;
+    Global.bots.push(new Bot("Bot " + algorithm, new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimpleTurquoiseCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[8].name + " ready!");
+        Global.bots[8].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
+    algorithm = 9;
+    Global.bots.push(new Bot("Bot " + algorithm, new Car(), algorithm));
+    b = Global.bots[algorithm];
+    b.car.track = Global.track;
+    b.car.image = new Image();
+    b.car.image.src = "images\\SimplePurpleCarTopView.svg";
+    b.car.image.onload = () => {
+        Utils.debug(Global.bots[9].name + " ready!");
+        Global.bots[9].car.restart();
+        if (Global.requestAnimationId === null) redrawCanvas();
+    };
 }
 
 // =====================================================================================================================
@@ -646,8 +750,8 @@ function initPlayers() {
 function findIntersectionsWithTrack() {
     // проверка пересечений с кривой
     if (Global.track) {
-        for (let tr = 1; tr < 3; tr++) {
-            for (let i = 0; i < Global.track.getLength() - 1; i++) {
+        for (let tr = 1; tr < 3; ++tr) {
+            for (let i = 0; i < Global.track.getLength() - 1; ++i) {
                 let p = Line.getCrossPoints(
                     Global.track.p[tr][i],
                     Global.track.p[tr][i + 1],
@@ -703,13 +807,26 @@ window.onload = () => {
 
         Utils.debug("onLoad");
         // ставим тачку в центр
-        offset.x = cnv.width / 2;
-        offset.y = cnv.height / 2;
+        offset.x = cnv.width / 2.0;
+        offset.y = cnv.height / 2.0;
         researchCrossPointsWithCurve();
         // если загрузились все файлы - начинаем подготовку к старту.
         if (Global.track != null) {
-            //initCars(2);
-            initPlayers();
+            if (Global.bots.length === 0) {
+                createBots();
+            }
+            if (Global.players.length === 0) {
+                initPlayers();
+            }
+            if (Global.followTarget === null && Global.isFollowMode === true) {
+                if (Global.bots.length) {
+                    Global.followTarget = Global.bots[0].car;
+                    Global.isFollowMode = true;
+                } else if (Global.players.length) {
+                    Global.followTarget = Global.players[0].car;
+                    Global.isFollowMode = true;
+                }
+            }
         }
     });
     // =====================================
@@ -738,7 +855,7 @@ window.onload = () => {
         }
         if (e.buttons & 4) {    // Middle button
             // переключаем режим следования камеры за машиной
-            isFollowMode = !isFollowMode;
+            Global.isFollowMode = !Global.isFollowMode;
             if (Global.requestAnimationId === null) redrawCanvas();
         }
     });
@@ -759,7 +876,7 @@ window.onload = () => {
         }
         // Right button
         if (e.buttons & 2) {
-            isFollowMode = false;
+            Global.isFollowMode = false;
             offset.x += (e.clientX - mouseDownPoint.x) / scale;
             offset.y += (e.clientY - mouseDownPoint.y) / scale;
             mouseDownPoint.x = e.clientX;
@@ -790,41 +907,49 @@ window.onload = () => {
 
     document.addEventListener("keydown", e => {
 
+        let redrawRequest = 0;
         switch (e.target) {
             case cnv:
-                let redrawRequest = 0;
                 for (let p of Global.players) {
                     redrawRequest |= checkKeyDown(e, p);
                 }
+                // рестарт той же трассы
+                if (e.code === "KeyR") {
+                    redrawRequest |= 1;
+                    for (let p of Global.players) {
+                        p.car.restart();
+                    }
+                    for (let b of Global.bots) {
+                        b.car.restart();
+                    }
+                    break;
+                }
+                // запуск/остановка ботов
                 if (e.code === "KeyZ") {
-                    // TODO нужна ли тут проверка на длинну массива?
                     redrawRequest = 2;
                     Global.enableBots = !Global.enableBots;
-                }
-                switch (redrawRequest) {
-                    case 1:
-                        // просто перерисовываем канвас
-                        if (Global.requestAnimationId === null) redrawCanvas();
-                        break;
-                    case 2:
-                    case 3:
-                        // запускаем анимацию
-                        if (Global.requestAnimationId === null) {
-                            Utils.debug("anim+");
-                            Global.requestAnimationId = requestAnimationFrame(redrawCanvas);
-                        }
-                        break;
+                    break;
                 }
                 if (e.code === "Space") {
                     if (e.ctrlKey === true) {
                         getTrack();
                     }
                     if (e.shiftKey === true) {
-                        Global.enableHideMode = !Global.enableHideMode;
-                        drawTrack(Global.track);
+                        Global.enableBlindMode = !Global.enableBlindMode;
+                        redrawRequest |= 1;
                     }
                     break;
                 }
+                // переключение камеры
+                let k = +e.key;
+                if (k === NaN) return;
+                k = k ? k - 1 : 9;
+                if (k < Global.bots.length) {
+                    Global.isFollowMode = true;
+                    Global.followTarget = Global.bots[k].car;
+                    Utils.debug(`Follow ${Global.bots[k].name}`);
+                }
+                redrawRequest |= 1;
                 break;
             case input:
                 if (e.code === "Enter") {
@@ -834,19 +959,28 @@ window.onload = () => {
                 }
                 break;
             default:
+                return;
+        }
+        switch (redrawRequest) {
+            case 1:
+                // просто перерисовываем канвас
+                if (Global.requestAnimationId === null) redrawCanvas();
+                break;
+            case 2:
+            case 3:
+                // запускаем анимацию
+                if (Global.requestAnimationId === null) {
+                    Utils.debug("anim+");
+                    Global.requestAnimationId = requestAnimationFrame(redrawCanvas);
+                }
                 break;
         }
     });
     // =====================================
 
     document.addEventListener("keyup", e => {
-        // TODO либо удалить redrawRequest, либо добавить
         if (e.target === cnv) {
-            // let redrawRequest = 0;
-            for (let p of Global.players) {
-                // redrawRequest |= checkKeyUp(e, p);
-                checkKeyUp(e, p);
-            }
+            for (let p of Global.players) checkKeyUp(e, p);
         }
     });
     // =====================================

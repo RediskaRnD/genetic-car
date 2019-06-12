@@ -5,13 +5,13 @@ import tools.Point;
 
 public class Car {
     private final double maxWheelAngle = Math.PI / 180 * 42;    // максимальный угол поворота колеса
-    // readonly
-    private Track track;
-    private Player driver;                      // водитель машины
-    private double maxSpeed;                    // максимальная скорость
-    private int width;                          // длина машины
-    public int height;                          // ширина машины
-    private double axl;                         // ускорение тачки вперёд
+    private final int impactsToDeath = 3;       // количество столкновений на полной скорости которое не переживет машина
+    public Track track;                         // трасса
+    public Player driver;                       // водитель машины
+    private double maxSpeed = 300;              // максимальная скорость
+    private int width = 60;                     // длина машины
+    public int height = 30;                     // ширина машины
+    private double axl = 60;                    // ускорение тачки вперёд
 
     private double r;                           // расстояние от центра машины до её угловой точки
     private double a;                           // угол Point.angleByPoints(позиция машины, средняя точка машины);
@@ -33,19 +33,18 @@ public class Car {
     public Object image;                        // картинка машины
 
     public double speed = 0;                    // текущая скорость машины
-    //public int keys = 0;                        // зажатые кнопки управления
+    //public int keys = 0;                      // зажатые кнопки управления
 
     public double time = 0;                     // время заезда
     public double distance = 0;                 // пройденное расстояние
     public int stage = 0;                       // сегмент трэка на котором находится тачка
     public double fuel = 0;                     // оставшееся количество топлива
-
-    public Sensor[] sensors;                   // сенсоры расстояния
+    public int crashes = 0;                     // сколько раз столкнулись со стеной
+    public double durability = 1;               // остаток прочности
+    public Sensor[] sensors;                    // сенсоры расстояния
     // =====================================
 
-    public Car(Track track, Player driver, int width, int height, double acceleration, double maxSpeed) {
-        this.track = track;
-        this.driver = driver;
+    public Car(int width, int height, double acceleration, double maxSpeed) {
         this.width = width;
         this.height = height;
         this.axl = acceleration;
@@ -53,7 +52,16 @@ public class Car {
 
         r = Math.sqrt(height * height + width * width) / 2;
 
-        Point midPoint = new Point(width / 2, height / 2);
+        Point midPoint = new Point(width / 2d, height / 2d);
+        a = Point.angleByPoints(_position, midPoint);
+
+        initSensors(5, Math.PI * 2 / 3, 1000);
+    }
+
+    public Car() {
+        r = Math.sqrt(height * height + width * width) / 2;
+
+        Point midPoint = new Point(width / 2d, height / 2d);
         a = Point.angleByPoints(_position, midPoint);
 
         initSensors(5, Math.PI * 2 / 3, 1000);
@@ -64,14 +72,14 @@ public class Car {
     // angle - угол который они охватывают
     private void initSensors(int quantity, double angle, double distance) {
         if (quantity == 1) {
-            sensors = new Sensor[]{new Sensor(this, track, 0, distance)};
+            sensors = new Sensor[]{new Sensor(this, 0, distance)};
         } else {
             // равномерно распределяем лучи
             double segment = angle / (quantity - 1);
             angle /= 2;
             sensors = new Sensor[quantity];
-            for (int i = 0; i < quantity; i++) {
-                sensors[i] = new Sensor(this, track, angle, distance);
+            for (int i = 0; i < quantity; ++i) {
+                sensors[i] = new Sensor(this, angle, distance);
                 angle -= segment;
             }
         }
@@ -88,7 +96,7 @@ public class Car {
         Point dp = Point.sub(p, _position);
         _position = p;
         // добавляем разницу к крайним точкам тачки
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 4; ++i) {
             cornerP[i] = Point.sum(cornerP[i], dp);
         }
     }
@@ -137,9 +145,19 @@ public class Car {
         updateSensors();
         // проверка на выезд за трассу
         if (checkCollisions() == true) {
+            ++crashes;
+            updateDurability();
             recoil(dt);
         }
         updateStageProgress();
+    }
+
+    // =====================================
+    // расчитываем оставшуюся прочность машины
+    private void updateDurability() {
+
+        durability -= speed < 10 ? 0 : speed / maxSpeed / impactsToDeath;
+        if (durability < 0.005) durability = 0;
     }
 
     // =====================================
@@ -187,7 +205,7 @@ public class Car {
     private void updateSpeed(double dt) {
         double v = speed;
 
-        if (fuel > 0) {
+        if (fuel > 0 && durability > 0) {
             // ускоряемся вперед
             if ((driver.keys & (1 << Key.FORWARD.ordinal())) > 0) {
                 if (v < 0) {
@@ -248,7 +266,7 @@ public class Car {
     // требуется ли анимация машины
     public boolean isRequestAnimation() {
         // машина не двигается и колёса стоят ровно, останавливаем анимацию
-        return (driver.keys != 0) || (speed != 0) || (_wheelAngle != 0) || Global.requestAnimationId == null;
+        return (driver.keys != 0) || (speed != 0) || (_wheelAngle != 0);
     }
 
     // =====================================
@@ -258,8 +276,8 @@ public class Car {
         int iMin = Math.max(stage - 2, 0);
         int iMax = Math.min(stage + 2, track.getLength() - 1);
         // проверяем обе стороны
-        for (int i = 1; i < 3; i++) {
-            for (int j = iMin; j < iMax; j++) {
+        for (int i = 1; i < 3; ++i) {
+            for (int j = iMin; j < iMax; ++j) {
                 if (Line.isCrossing(track.p[i][j], track.p[i][j + 1], cornerP[0], cornerP[1]) == true) return true;
                 if (Line.isCrossing(track.p[i][j], track.p[i][j + 1], cornerP[1], cornerP[2]) == true) return true;
                 if (Line.isCrossing(track.p[i][j], track.p[i][j + 1], cornerP[2], cornerP[3]) == true) return true;

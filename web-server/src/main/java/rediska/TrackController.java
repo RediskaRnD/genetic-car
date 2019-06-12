@@ -63,9 +63,9 @@ public class TrackController {
     @GetMapping("/car")
     @ResponseBody
     public String getParams(@RequestParam(defaultValue = "1") int keys) {
-        Car car = competition.player.car;
+        Car car = competition.participants.get(0).car;
         car.update(1.0 / 60);
-        competition.player.keys |= keys; // ???? TODO
+        competition.participants.get(0).keys |= keys; // ???? TODO
 
         JSONObject jsonObject = new JSONObject();
         JSONArray sensors = new JSONArray();

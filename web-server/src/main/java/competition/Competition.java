@@ -3,16 +3,17 @@ package competition;
 import core.*;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Component
 public class Competition {
 
-    public Player player = new Player("Rediska");
+    public List<Player> participants = new ArrayList<>();
 
     public Competition() {
-
-        Track track = new Track(100);
-        Car car = new Car(track, player,60, 30, 60, 300);
-        car.restart();
-        player.car = car;
+        participants.add(new Player("Test", new Car()));
+        participants.get(0).car.track = new Track(100);
+        participants.get(0).car.restart();
     }
 }
