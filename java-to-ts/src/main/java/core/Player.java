@@ -6,6 +6,7 @@ public class Player {
     public int keys = 0;                                            // зажатые кнопки управления
     public String[] keyCodes = new String[Key.size.ordinal()];      // назначенные кнопки
     public Car car;                                                 // машина игрока
+    public boolean isFinished = false;                              // флаг финиша
 
     public Player(String name, Car car) {
         this.name = name;

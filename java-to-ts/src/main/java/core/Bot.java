@@ -9,33 +9,58 @@ public class Bot extends Player {
         this.algorithm = algorithm;
     }
 
-    public int getDirection() {
+    public void selectDirection() {
         switch (algorithm) {
             case 0:
-                return algorithm_a(1.8);
+                algorithm_b(2, 4);
+                return;
             case 1:
-                return algorithm_a(1.9);
+                algorithm_b(2.2, 4.5);
+                return;
             case 2:
-                return algorithm_a(2);
+                algorithm_b(2.4, 5);
+                return;
             case 3:
-                return algorithm_a(2.1);
+                algorithm_b(2.6, 5.5);
+                return;
             case 4:
-                return algorithm_a(2.2);
+                algorithm_b(2.8, 6);
+                return;
+//            case 0:
+//                algorithm_a(1.8);
+//                return;
+//            case 1:
+//                algorithm_a(1.9);
+//                return;
+//            case 2:
+//                algorithm_a(2);
+//                return;
+//            case 3:
+//                algorithm_a(2.1);
+//                return;
+//            case 4:
+//                algorithm_a(2.2);
+//                return;
             case 5:
-                return algorithm_b(1.5, 3);
+                algorithm_b(1.5, 3);
+                return;
             case 6:
-                return algorithm_b(1.6, 3.2);
+                algorithm_b(1.6, 3.2);
+                return;
             case 7:
-                return algorithm_b(1.7, 3.4);
+                algorithm_b(1.7, 3.4);
+                return;
             case 8:
-                return algorithm_b(1.8, 3.6);
+                algorithm_b(1.8, 3.6);
+                return;
             case 9:
-                return algorithm_b(1.9, 3.8);
+                algorithm_b(1.9, 3.8);
+                return;
         }
-        return 0;
     }
 
-    private int algorithm_a(double minDistance) {
+    private void algorithm_a(double minDistance) {
+        keys = 1 << Key.FORWARD.ordinal();
         double min = 1.0 / 0.0;     //Double.POSITIVE_INFINITY;
         double max = 0;
         int iMin = 0;
@@ -52,19 +77,19 @@ public class Bot extends Player {
             ++i;
         }
         // если находимся слишком близко к обочине - рулим в другую сторону
-        int dir = 0;
         int len = car.sensors.length;
-        if (min < car.height * minDistance) {
+        if (min < car.width * minDistance) {
             if (iMin < len / 2) {
-                dir -= 1;
+                keys |= 1 << Key.LEFT.ordinal();
             } else if (iMin >= len - len / 2) { // удаляем из расчетов средний сенсор при нечетном количестве сенсоров
-                dir += 1;
+                keys |= 1 << Key.RIGHT.ordinal();
             }
-            return dir;
+            return;
         }
 
         // ищем самую дальнюю точку и рулим в её сторону
         i = 0;
+        int dir = 0;
         for (Sensor s : car.sensors) {
             if (s.distance == max) {
                 if (i < len / 2) {
@@ -75,30 +100,40 @@ public class Bot extends Player {
             }
             ++i;
         }
-        return dir;
+        if (dir < 0) {
+            keys |= 1 << Key.LEFT.ordinal();
+            return;
+        }
+        if (dir > 0) {
+            keys |= 1 << Key.RIGHT.ordinal();
+        }
     }
 
-    private int algorithm_b(double distance1, double distance2) {
-
+    private void algorithm_b(double distance1, double distance2) {
+        keys = 1 << Key.FORWARD.ordinal();
         // если находимся слишком близко к обочине - рулим в другую сторону
         int dir = 0;
         int len = car.sensors.length;
         if (len > 1) {
             double d1 = car.sensors[0].distance;
             double d2 = car.sensors[len - 1].distance;
-            if (d1 < d2 && d1 < car.height * distance1) {
-                return -1;
-            } else if (d1 > d2 && d2 < car.height * distance1) {
-                return 1;
+            if (d1 < d2 && d1 < car.width * distance1) {
+                keys |= 1 << Key.LEFT.ordinal();
+                return;
+            } else if (d1 > d2 && d2 < car.width * distance1) {
+                keys |= 1 << Key.RIGHT.ordinal();
+                return;
             }
         }
         if (len > 3) {
             double d1 = car.sensors[1].distance;
             double d2 = car.sensors[len - 2].distance;
-            if (d1 < d2 && d1 < car.height * distance2) {
-                return -1;
-            } else if (d1 > d2 && d2 < car.height * distance2) {
-                return 1;
+            if (d1 < d2 && d1 < car.width * distance2) {
+                keys |= 1 << Key.LEFT.ordinal();
+                return;
+            } else if (d1 > d2 && d2 < car.width * distance2) {
+                keys |= 1 << Key.RIGHT.ordinal();
+                return;
             }
         }
         // ищем самую дальнюю точку и рулим в её сторону
@@ -122,6 +157,12 @@ public class Bot extends Player {
             }
             ++i;
         }
-        return dir;
+        if (dir < 0) {
+            keys |= 1 << Key.LEFT.ordinal();
+            return;
+        }
+        if (dir > 0) {
+            keys |= 1 << Key.RIGHT.ordinal();
+        }
     }
 }

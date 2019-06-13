@@ -1,0 +1,5 @@
+{
+  "adapters": [
+    "org.jsweet.transpiler.extension.Java2TypeScriptAdapter"
+  ]
+}

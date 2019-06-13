@@ -59,6 +59,7 @@
                 <version>2.3.0-SNAPSHOT</version>
                 <configuration>
                     <verbose>false</verbose>
+                    <declaration>true</declaration>
                     <tsOut>../web-server/src/main/resources/static</tsOut>
                     <outDir>../web-server/src/main/resources/static</outDir>
                     <targetVersion>ES6</targetVersion>

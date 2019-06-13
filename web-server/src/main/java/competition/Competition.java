@@ -9,11 +9,17 @@ import java.util.List;
 @Component
 public class Competition {
 
+    public String name;
+    public List<double[]> results;
+
     public List<Player> participants = new ArrayList<>();
+    public List<Track> tracks = new ArrayList<>();
 
     public Competition() {
-        participants.add(new Player("Test", new Car()));
-        participants.get(0).car.track = new Track(100);
-        participants.get(0).car.restart();
+        this("Sikaw");
+    }
+
+    public Competition(String name) {
+        this.name = name;
     }
 }
